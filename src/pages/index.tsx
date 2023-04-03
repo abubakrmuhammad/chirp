@@ -1,14 +1,13 @@
 import { type NextPage } from "next";
 import Head from "next/head";
-import Link from "next/link";
 
 import { api } from "@/utils/api";
-import { SignIn, SignInButton, useUser } from "@clerk/nextjs";
+import { SignIn, SignInButton, SignOutButton, useUser } from "@clerk/nextjs";
 
 const Home: NextPage = () => {
-  const hello = api.example.hello.useQuery({ text: "from tRPC" });
+  const { user, isSignedIn } = useUser();
 
-  const user = useUser();
+  const { data } = api.posts.getAll.useQuery();
 
   return (
     <>
@@ -21,8 +20,15 @@ const Home: NextPage = () => {
         {!!user ? (
           <div className="flex flex-col items-center justify-center">
             <h1 className="text-4xl font-bold text-white">
-              Hello {user.user?.fullName}!
+              Hello {user?.fullName}!
             </h1>
+            {isSignedIn && <SignOutButton />}
+
+            {data?.map((post) => (
+              <div key={post.id} className="text-white">
+                {post.content}
+              </div>
+            ))}
           </div>
         ) : (
           <SignInButton />
