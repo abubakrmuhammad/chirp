@@ -6,11 +6,21 @@ import { SignIn, SignInButton, useUser } from "@clerk/nextjs";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import Image from "next/image";
+import { useState } from "react";
 
 dayjs.extend(relativeTime);
 
 const CreatePostWizard = () => {
   const { user } = useUser();
+  const ctx = api.useContext();
+  const [content, setContent] = useState("");
+
+  const { mutate, isLoading: isPosting } = api.posts.create.useMutation({
+    onSuccess: () => {
+      setContent("");
+      void ctx.posts.getAll.invalidate();
+    },
+  });
 
   if (!user) return null;
 
@@ -27,7 +37,21 @@ const CreatePostWizard = () => {
       <input
         placeholder="Type some emojis"
         className="grow bg-transparent outline-none"
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        type="text"
+        disabled={isPosting}
       />
+
+      <button
+        type="submit"
+        disabled={isPosting}
+        onClick={() => {
+          mutate({ content });
+        }}
+      >
+        {isPosting ? "Posting..." : "Post"}
+      </button>
     </div>
   );
 };
