@@ -1,7 +1,7 @@
 import {
   createTRPCRouter,
-  privateProcedure,
   publicProcedure,
+  rateLimitedPrivateProcedure,
 } from "@/server/api/trpc";
 import { clerkClient } from "@clerk/nextjs/server";
 import type { User } from "@clerk/nextjs/dist/api";
@@ -43,10 +43,10 @@ export const postsRouter = createTRPCRouter({
     });
   }),
 
-  create: privateProcedure
+  create: rateLimitedPrivateProcedure
     .input(
       z.object({
-        content: z.string().emoji().min(1).max(255),
+        content: z.string().emoji("Only Emojis are allowed!").min(1).max(255),
       })
     )
     .mutation(async ({ ctx, input }) => {

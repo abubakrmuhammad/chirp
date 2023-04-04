@@ -18,6 +18,17 @@ import { type CreateNextContextOptions } from "@trpc/server/adapters/next";
 
 import { prisma } from "@/server/db";
 
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
+
+// Create a new rate limiter, that allows 3 requests per 1 minute
+const ratelimit = new Ratelimit({
+  redis: Redis.fromEnv(),
+  limiter: Ratelimit.slidingWindow(3, "1 m"),
+  analytics: true,
+  prefix: "@upstash/ratelimit",
+});
+
 /**
  * This is the actual context you will use in your router. It will be used to process every request
  * that goes through your tRPC endpoint.
@@ -97,3 +108,13 @@ const enforceAuth = t.middleware(async ({ ctx, next }) => {
 });
 
 export const privateProcedure = t.procedure.use(enforceAuth);
+
+const enforceRateLimit = enforceAuth.unstable_pipe(async ({ ctx, next }) => {
+  const { success } = await ratelimit.limit(ctx.currentUserId);
+
+  if (!success) throw new TRPCError({ code: "TOO_MANY_REQUESTS" });
+
+  return next();
+});
+
+export const rateLimitedPrivateProcedure = t.procedure.use(enforceRateLimit);

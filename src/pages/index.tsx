@@ -6,21 +6,60 @@ import { SignIn, SignInButton, useUser } from "@clerk/nextjs";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import Image from "next/image";
-import { useState } from "react";
+import { useCallback } from "react";
+import { toast } from "react-hot-toast";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 dayjs.extend(relativeTime);
+
+const postsFormSchema = z.object({
+  content: z
+    .string()
+    .min(1, "Please enter at least one emoji.")
+    .max(255, "Too many emojis!"),
+});
+
+type FormData = z.infer<typeof postsFormSchema>;
 
 const CreatePostWizard = () => {
   const { user } = useUser();
   const ctx = api.useContext();
-  const [content, setContent] = useState("");
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    getValues,
+    formState: { errors },
+  } = useForm<FormData>({
+    resolver: zodResolver(postsFormSchema),
+  });
+
+  const hasContent = getValues("content")?.length > 0;
 
   const { mutate, isLoading: isPosting } = api.posts.create.useMutation({
     onSuccess: () => {
-      setContent("");
+      reset();
       void ctx.posts.getAll.invalidate();
     },
+    onError: (e) => {
+      const errorMessage =
+        e.data?.zodError?.fieldErrors.content?.[0] ||
+        "Failed to Post! Please try again later.";
+
+      toast.error(errorMessage);
+    },
   });
+
+  const onSubmit = useCallback(
+    (data: FormData) => {
+      console.log(data);
+      if (hasContent) mutate({ content: data.content });
+    },
+    [hasContent, mutate]
+  );
 
   if (!user) return null;
 
@@ -34,24 +73,31 @@ const CreatePostWizard = () => {
         height={56}
       />
 
-      <input
-        placeholder="Type some emojis"
-        className="grow bg-transparent outline-none"
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        type="text"
-        disabled={isPosting}
-      />
+      {/* eslint-disable-next-line @typescript-eslint/no-misused-promises */}
+      <form onSubmit={handleSubmit(onSubmit)} className="flex grow">
+        <div className="flex grow flex-col">
+          <input
+            placeholder="Type some emojis"
+            className="grow bg-transparent outline-none"
+            type="text"
+            disabled={isPosting}
+            {...register("content")}
+            autoComplete="off"
+          />
 
-      <button
-        type="submit"
-        disabled={isPosting}
-        onClick={() => {
-          mutate({ content });
-        }}
-      >
-        {isPosting ? "Posting..." : "Post"}
-      </button>
+          {errors.content && (
+            <div className="text-xs text-red-500">{errors.content.message}</div>
+          )}
+        </div>
+
+        <button
+          type="submit"
+          disabled={isPosting || !hasContent}
+          className="disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isPosting ? "Posting..." : "Post"}
+        </button>
+      </form>
     </div>
   );
 };
