@@ -4,17 +4,9 @@ import {
   rateLimitedPrivateProcedure,
 } from "@/server/api/trpc";
 import { clerkClient } from "@clerk/nextjs/server";
-import type { User } from "@clerk/nextjs/dist/api";
 import { TRPCError } from "@trpc/server";
 import { createPostSchema } from "@/utils/schemas";
-
-const filterUserForClient = (user: User) => {
-  const { id, username, firstName, lastName, profileImageUrl } = user;
-
-  const fullName = [firstName, lastName].filter(Boolean).join(" ");
-
-  return { id, username, firstName, lastName, fullName, profileImageUrl };
-};
+import { filterUserForClient } from "@/utils/helpers";
 
 export const postsRouter = createTRPCRouter({
   getAll: publicProcedure.query(async ({ ctx }) => {

@@ -21,8 +21,10 @@ function PostView(props: PostWithAuthor) {
 
       <div className="flex flex-col">
         <div className="flex items-center text-slate-200">
-          <Link href={`/@${fullNameToUserName(author.fullName)}`}>
-            <h3 className="font-bold">{author.fullName}</h3>
+          <Link href={`/${author.id}`}>
+            <h3 className="font-bold">
+              @{fullNameToUserName(author.fullName)}
+            </h3>
           </Link>
 
           <Link href={`/post/${post.id}`}>
