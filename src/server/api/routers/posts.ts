@@ -6,7 +6,7 @@ import {
 import { clerkClient } from "@clerk/nextjs/server";
 import type { User } from "@clerk/nextjs/dist/api";
 import { TRPCError } from "@trpc/server";
-import { z } from "zod";
+import { createPostSchema } from "@/utils/schemas";
 
 const filterUserForClient = (user: User) => {
   const { id, username, firstName, lastName, profileImageUrl } = user;
@@ -44,11 +44,7 @@ export const postsRouter = createTRPCRouter({
   }),
 
   create: rateLimitedPrivateProcedure
-    .input(
-      z.object({
-        content: z.string().emoji("Only Emojis are allowed!").min(1).max(255),
-      })
-    )
+    .input(createPostSchema)
     .mutation(async ({ ctx, input }) => {
       const authorId = ctx.currentUserId;
 

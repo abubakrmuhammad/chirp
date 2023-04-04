@@ -5,6 +5,10 @@ import { api } from "@/utils/api";
 import "@/styles/globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Toaster } from "react-hot-toast";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+
+dayjs.extend(relativeTime);
 
 const MyApp: AppType = ({ Component, pageProps }) => {
   return (
