@@ -5,16 +5,13 @@ import type {
   NextPage,
 } from "next";
 import Head from "next/head";
-import superjson from "superjson";
 import { api } from "@/utils/api";
 import LoadingSpinner from "@/components/LoadingSpinner";
-import { appRouter } from "@/server/api/root";
-import { createProxySSGHelpers } from "@trpc/react-query/ssg";
-import { prisma } from "@/server/db";
 import { fullNameToUserName } from "@/utils/helpers";
 import PageLayout from "@/components/PageLayout";
 import Image from "next/image";
 import PostView from "@/components/PostView";
+import { generateSSGHelper } from "@/server/ssgHelper";
 
 type PageProps = InferGetStaticPropsType<typeof getStaticProps>;
 
@@ -77,11 +74,7 @@ export default ProfilePage;
 export const getStaticProps: GetStaticProps<{ userId: string }> = async (
   ctx
 ) => {
-  const ssg = createProxySSGHelpers({
-    router: appRouter,
-    ctx: { prisma, currentUserId: "" },
-    transformer: superjson,
-  });
+  const ssg = generateSSGHelper();
 
   const userId = ctx.params?.userId;
 
