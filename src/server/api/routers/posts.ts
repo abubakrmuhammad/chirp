@@ -3,10 +3,9 @@ import {
   publicProcedure,
   rateLimitedPrivateProcedure,
 } from "@/server/api/trpc";
-import { clerkClient } from "@clerk/nextjs/server";
-import { TRPCError } from "@trpc/server";
 import { createPostSchema } from "@/utils/schemas";
-import { filterUserForClient } from "@/utils/helpers";
+import { addUserDataToPosts } from "@/utils/helpers";
+import { z } from "zod";
 
 export const postsRouter = createTRPCRouter({
   getAll: publicProcedure.query(async ({ ctx }) => {
@@ -15,25 +14,20 @@ export const postsRouter = createTRPCRouter({
       orderBy: { createdAt: "desc" },
     });
 
-    const users = (
-      await clerkClient.users.getUserList({
-        userId: posts.map((post) => post.authorId),
-        limit: 100,
-      })
-    ).map(filterUserForClient);
-
-    return posts.map((post) => {
-      const author = users.find((u) => u.id === post.authorId);
-
-      if (!author)
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Author for post not found",
-        });
-
-      return { post, author };
-    });
+    return addUserDataToPosts(posts);
   }),
+
+  getPostsByUserId: publicProcedure
+    .input(z.string())
+    .query(async ({ ctx, input: authorId }) => {
+      const posts = await ctx.prisma.post.findMany({
+        where: { authorId },
+        take: 100,
+        orderBy: { createdAt: "desc" },
+      });
+
+      return addUserDataToPosts(posts);
+    }),
 
   create: rateLimitedPrivateProcedure
     .input(createPostSchema)
